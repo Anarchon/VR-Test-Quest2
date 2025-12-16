@@ -43,6 +43,7 @@ ProjectSettings/
    - `Oculus XR Plugin` (wird in OpenXR genutzt)
    - `XR Interaction Toolkit` (empfohlen: 2.5.4 für Unity 2022.3 LTS)
    - `XR Core Utils` **2.3.0** (Version, die von XRI 2.5.4 referenziert wird)
+   - Eingebaute Module aktivieren: **Android JNI** (für `Permission/PermissionCallbacks`) und **Unity Analytics** (für `AnalyticsResult` in OpenXR)
    - `Input System` aktivieren und als Standard setzen.
 3. **OpenXR / Quest 2 aktivieren**:
    - `Edit > Project Settings > XR Plug-in Management`: Plattform `Android` auswählen, `OpenXR` anhaken.
