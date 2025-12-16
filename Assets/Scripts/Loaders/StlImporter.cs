@@ -28,7 +28,12 @@ namespace RuntimeModelLoaders.Loaders
 
         private static Mesh ParseAscii(Stream stream, string path)
         {
-            var reader = new StreamReader(stream, Encoding.ASCII, leaveOpen: true);
+            var reader = new StreamReader(
+                stream,
+                Encoding.ASCII,
+                detectEncodingFromByteOrderMarks: false,
+                bufferSize: 1024,
+                leaveOpen: true);
             var vertices = new List<Vector3>();
             var normals = new List<Vector3>();
             var triangles = new List<int>();
