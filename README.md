@@ -9,6 +9,8 @@ Dieses Repository enthält ein Unity-Projektgerüst für die Meta Quest 2 (Oculu
 - Platzierung, Skalierung und Rotation der geladenen Modelle über XR Grab Interactable
 - World-Space-UI für Dateiauswahl, Laden/Entfernen und Fehlermeldungen
 - Sauber getrennte Loader-Logik und VR-Interaktionskomponenten
+- Vorkonfigurierte ARM64/IL2CPP-Einstellungen für Quest-Builds
+- OpenXR + Oculus Touch Controller Profile über XR Interaction Toolkit
 
 ## Projektstruktur
 ```
@@ -53,26 +55,30 @@ ProjectSettings/
    - `Edit > Project Settings > XR Plug-in Management`: Plattform `Android` auswählen, `OpenXR` anhaken.
    - Unter `OpenXR` -> `Features`: `Oculus Touch Controller Profile`, `Eye Gaze Interaction` (optional) aktivieren.
    - `Interaction Profiles`: Meta Quest Touch an oberste Stelle setzen.
-4. **XR Origin in Szene**:
+4. **Input Actions für Quest-Controller**:
+   - Im Package Manager das Sample **"Starter Assets"** bzw. **"XRI Default Input Actions"** des XR Interaction Toolkits importieren (enthält Mappings für Quest Touch).
+   - Das erzeugte Input Action Asset in den `XR Interaction Manager`/`XR Origin (Action Based)` Referenzen (Action Assets für Hands/Locomotion) zuweisen.
+   - Prüfen, dass die Control Schemes "XR Controller" aktiv sind (New Input System).
+5. **XR Origin in Szene**:
    - Öffne `Assets/Scenes/SampleLoaderScene.unity` und ersetze die `Main Camera` bei Bedarf durch ein `XR Origin (Action Based)` Prefab aus dem XR Interaction Toolkit.
    - Linke/rechte Hand-Controller (Ray Interactor + Direct Interactor) aktivieren.
    - `Teleportation Provider` + Teleportation Areas/Ways optional hinzufügen.
-5. **UI platzieren**:
+6. **UI platzieren**:
    - Ein World-Space-Canvas neben den Startpunkt stellen (Prefab aus `Assets/UI/` falls erstellt) und `FileBrowserUI` als Controller setzen.
    - Buttons `Refresh`, `Load Selected`, `Clear All`, `Load From StreamingAssets` verdrahten.
-6. **Model Loader**:
+7. **Model Loader**:
    - In `SampleLoaderScene` ist bereits ein `ModelLoader`-Objekt vorhanden. Prüfe die Referenzen: `ContentRoot` (liegt im Raum vor dem Startpunkt) und `DefaultModel`-Material sind gesetzt.
    - Verknüpfe UI-Referenzen (FileBrowserUI/ToastPresenter), damit die Buttons funktionieren.
-7. **Build-Einstellungen (Quest 2)**:
+8. **Build-Einstellungen (Quest 2)**:
    - `File > Build Settings`: Plattform `Android`, `Texture Compression` ASTC, `Target API Level` 33 oder gemäß Meta-Richtlinien.
-   - `Player Settings`: `Color Space` Linear, `Multithreaded Rendering` aktiviert, `Scripting Backend` IL2CPP, `ARM64` als Ziel-Architektur.
+   - `Player Settings`: `Color Space` Linear, `Multithreaded Rendering` aktiviert, `Scripting Backend` IL2CPP, `ARM64` als Ziel-Architektur (Projekt ist bereits so vorkonfiguriert).
    - `Minimum API Level` >= 29, `Target` 33+, `Internet` Permission i. d. R. nicht nötig.
    - `XR Plug-in Management` sicherstellen, dass nur `OpenXR` aktiv ist.
-8. **Dateien bereitstellen (Models-Ordner Pflicht)**:
+9. **Dateien bereitstellen (Models-Ordner Pflicht)**:
    - Lege unter `Application.persistentDataPath/Models/` pro Modell einen eigenen Unterordner an (z. B. `Models/Spaceship/ship.glb`).
    - Modelle nach `Android/data/<APP-ID>/files/Models` pushen (`adb push myModelFolder /sdcard/Android/data/<APP-ID>/files/Models/`).
    - Alternativ in `Assets/StreamingAssets/Models/` legen, damit sie ins Build gepackt werden. StreamingAssets werden in der UI mit Präfix gekennzeichnet.
-9. **Szenenspeichern**: Szene als `SampleLoaderScene` speichern und in den Build Settings hinzufügen.
+10. **Szenenspeichern**: Szene als `SampleLoaderScene` speichern und in den Build Settings hinzufügen.
 
 ## Erweiterung um neue Dateiformate
 - Ergänze einen neuen Parser (z. B. `PlyImporter.cs`) im Ordner `Assets/Scripts/Loaders/`.

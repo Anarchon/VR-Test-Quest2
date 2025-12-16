@@ -46,6 +46,10 @@ PlayerSettings:
   m_AndroidUseSwappy: 1
   m_MipStripping: 0
   m_ApiCompatibilityLevelPerPlatform: {}
+  m_ScriptingBackend:
+    Android: 1
+  m_ManagedStrippingLevel: {}
+  m_Il2CppCompilerConfiguration: {}
   activeInputHandler: 2
   enableNativePlatformBackendsForNewInputSystem: 1
   disableOldInputManagerSupport: 1
