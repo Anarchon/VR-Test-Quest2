@@ -16,8 +16,8 @@ namespace RuntimeModelLoaders.Loaders
             var gltf = new GltfImport();
             var loadTask = gltf.Load(path, new ImportSettings
             {
-                generateMipMaps = true,
-                anisotropicFilterLevel = 4
+                GenerateMipMaps = true,
+                AnisotropicFilterLevel = 4
             });
 
             while (!loadTask.IsCompleted)

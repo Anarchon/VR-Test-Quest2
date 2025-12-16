@@ -110,27 +110,72 @@ namespace RuntimeModelLoaders.Loaders
                 yield break;
             }
 
-            try
+            Exception? caught = null;
+            bool success = false;
+
+            yield return LoadFileInternal(cleanedPath, extension, ex => caught = ex, () => success = true);
+
+            if (caught != null)
             {
-                switch (extension.ToLowerInvariant())
-                {
-                    case ".gltf":
-                    case ".glb":
-                        yield return GltfImporter.Load(cleanedPath, contentRoot, go => FinalizeSpawn(go, cleanedPath));
-                        break;
-                    default:
+                Debug.LogException(caught);
+                toastPresenter?.ShowMessage($"Fehler beim Laden: {caught.Message}");
+            }
+            else if (success)
+            {
+                toastPresenter?.ShowMessage($"Geladen: {Path.GetFileName(cleanedPath)}");
+            }
+        }
+
+        private System.Collections.IEnumerator LoadFileInternal(
+            string cleanedPath,
+            string extension,
+            Action<Exception> onError,
+            Action onSuccess)
+        {
+            switch (extension.ToLowerInvariant())
+            {
+                case ".gltf":
+                case ".glb":
+                    var gltfRoutine = GltfImporter.Load(cleanedPath, contentRoot, go =>
+                    {
+                        FinalizeSpawn(go, cleanedPath);
+                        onSuccess?.Invoke();
+                    });
+
+                    while (true)
+                    {
+                        bool moveNext;
+                        try
+                        {
+                            moveNext = gltfRoutine.MoveNext();
+                        }
+                        catch (Exception ex)
+                        {
+                            onError?.Invoke(ex);
+                            yield break;
+                        }
+
+                        if (!moveNext)
+                            break;
+
+                        yield return gltfRoutine.Current;
+                    }
+
+                    break;
+                default:
+                    try
+                    {
                         var mesh = CreateMesh(cleanedPath, extension);
                         var go = CreateMeshObject(mesh);
                         FinalizeSpawn(go, cleanedPath);
-                        break;
-                }
+                        onSuccess?.Invoke();
+                    }
+                    catch (Exception ex)
+                    {
+                        onError?.Invoke(ex);
+                    }
 
-                toastPresenter?.ShowMessage($"Geladen: {Path.GetFileName(cleanedPath)}");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                toastPresenter?.ShowMessage($"Fehler beim Laden: {ex.Message}");
+                    break;
             }
         }
 
