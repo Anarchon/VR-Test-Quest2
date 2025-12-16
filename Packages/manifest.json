@@ -11,12 +11,20 @@
     "com.unity.xr.management": "4.4.1",
     "com.unity.xr.oculus": "3.3.0",
     "com.unity.xr.openxr": "1.8.2",
-    "com.atteneder.gltfast": "5.2.0",
+    "com.atteneder.gltfast": "6.1.0",
     "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.unityanalytics": "1.0.0",
     "com.unity.modules.animation": "1.0.0",
     "com.unity.modules.physics": "1.0.0"
   },
-  "scopedRegistries": [],
+  "scopedRegistries": [
+    {
+      "name": "OpenUPM",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.atteneder"
+      ]
+    }
+  ],
   "registry": "https://packages.unity.com"
 }

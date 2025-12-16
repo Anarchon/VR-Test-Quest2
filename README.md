@@ -44,9 +44,10 @@ ProjectSettings/
    - `Oculus XR Plugin` (wird in OpenXR genutzt)
    - `XR Interaction Toolkit` (empfohlen: 2.5.4 für Unity 2022.3 LTS)
    - `XR Core Utils` **2.3.0** (Version, die von XRI 2.5.4 referenziert wird)
-   - `glTFast` (Manifest enthält `com.atteneder.gltfast`), um glTF/GLB inkl. Texturen zu laden
+   - `glTFast` 6.1.0 (Manifest enthält `com.atteneder.gltfast` über den OpenUPM-Registry-Eintrag), um glTF/GLB inkl. Texturen zu laden
    - Eingebaute Module aktivieren: **Android JNI** (für `Permission/PermissionCallbacks`) und **Unity Analytics** (für `AnalyticsResult` in OpenXR)
    - `Input System` aktivieren, als Standard setzen **und** in den Player Settings die "Native Platform Backends for the New Input System" einschalten (erfordert Editor-Neustart).
+   - Falls Unity den glTFast-Eintrag nicht findet: `Project Settings > Package Manager > Scoped Registries` öffnen und sicherstellen, dass `OpenUPM` mit Scope `com.atteneder` auf `https://package.openupm.com` eingetragen ist (siehe Manifest).
 3. **OpenXR / Quest 2 aktivieren**:
    - `Edit > Project Settings > XR Plug-in Management`: Plattform `Android` auswählen, `OpenXR` anhaken.
    - Unter `OpenXR` -> `Features`: `Oculus Touch Controller Profile`, `Eye Gaze Interaction` (optional) aktivieren.
