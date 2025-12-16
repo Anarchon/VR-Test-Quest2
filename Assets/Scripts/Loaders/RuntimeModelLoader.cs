@@ -9,8 +9,9 @@ using UnityEngine.XR.Interaction.Toolkit;
 namespace RuntimeModelLoaders.Loaders
 {
     /// <summary>
-    /// Koordiniert das Laden von OBJ/STL-Dateien aus persistentem Speicher oder StreamingAssets
-    /// und instanziiert sie im VR-Raum. Die Klasse trennt UI-Events von Loader-Logik.
+    /// Koordiniert das Laden von OBJ/STL/glTF-Dateien aus dem Models-Ordner im Spieleverzeichnis
+    /// (persistentDataPath) oder optional StreamingAssets/Models und instanziiert sie im VR-Raum.
+    /// Die Klasse trennt UI-Events von Loader-Logik.
     /// </summary>
     public class RuntimeModelLoader : MonoBehaviour
     {
@@ -23,13 +24,15 @@ namespace RuntimeModelLoaders.Loaders
         [Header("Options")]
         [Tooltip("Falls gesetzt, werden Dateien aus StreamingAssets zusätzlich angezeigt.")]
         [SerializeField] private bool includeStreamingAssets = true;
+        [Tooltip("Name des Unterordners innerhalb des Spielordners, der Modelldateien enthält.")]
+        [SerializeField] private string modelsFolderName = "Models";
 
         public bool IncludeStreamingAssets => includeStreamingAssets;
 
         private readonly List<GameObject> _spawnedModels = new();
         private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
-            ".obj", ".stl"
+            ".obj", ".stl", ".gltf", ".glb"
         };
 
         private void Start()
@@ -69,39 +72,7 @@ namespace RuntimeModelLoaders.Loaders
         /// und plaziert es vor dem XR Origin.
         /// </summary>
         /// <param name="fullPath">Absoluter Pfad zur Datei</param>
-        public void LoadFile(string fullPath)
-        {
-            if (string.IsNullOrEmpty(fullPath))
-            {
-                toastPresenter?.ShowMessage("Keine Datei ausgewählt.");
-                return;
-            }
-
-            if (!File.Exists(fullPath))
-            {
-                toastPresenter?.ShowMessage($"Datei nicht gefunden: {fullPath}");
-                return;
-            }
-
-            var extension = Path.GetExtension(fullPath);
-            if (!SupportedExtensions.Contains(extension))
-            {
-                toastPresenter?.ShowMessage($"Nicht unterstütztes Format: {extension}");
-                return;
-            }
-
-            try
-            {
-                var mesh = CreateMesh(fullPath, extension);
-                SpawnModel(mesh, fullPath);
-                toastPresenter?.ShowMessage($"Geladen: {Path.GetFileName(fullPath)}");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                toastPresenter?.ShowMessage($"Fehler beim Laden: {ex.Message}");
-            }
-        }
+        public void LoadFile(string fullPath) => StartCoroutine(LoadFileRoutine(fullPath));
 
         /// <summary>
         /// Entfernt alle zuvor instanziierten Modelle.
@@ -116,6 +87,53 @@ namespace RuntimeModelLoaders.Loaders
             _spawnedModels.Clear();
         }
 
+        private System.Collections.IEnumerator LoadFileRoutine(string fullPath)
+        {
+            if (string.IsNullOrEmpty(fullPath))
+            {
+                toastPresenter?.ShowMessage("Keine Datei ausgewählt.");
+                yield break;
+            }
+
+            var cleanedPath = NormalizePath(fullPath);
+
+            if (!File.Exists(cleanedPath))
+            {
+                toastPresenter?.ShowMessage($"Datei nicht gefunden: {cleanedPath}");
+                yield break;
+            }
+
+            var extension = Path.GetExtension(cleanedPath);
+            if (!SupportedExtensions.Contains(extension))
+            {
+                toastPresenter?.ShowMessage($"Nicht unterstütztes Format: {extension}");
+                yield break;
+            }
+
+            try
+            {
+                switch (extension.ToLowerInvariant())
+                {
+                    case ".gltf":
+                    case ".glb":
+                        yield return GltfImporter.Load(cleanedPath, contentRoot, go => FinalizeSpawn(go, cleanedPath));
+                        break;
+                    default:
+                        var mesh = CreateMesh(cleanedPath, extension);
+                        var go = CreateMeshObject(mesh);
+                        FinalizeSpawn(go, cleanedPath);
+                        break;
+                }
+
+                toastPresenter?.ShowMessage($"Geladen: {Path.GetFileName(cleanedPath)}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                toastPresenter?.ShowMessage($"Fehler beim Laden: {ex.Message}");
+            }
+        }
+
         private Mesh CreateMesh(string path, string extension)
         {
             return extension.ToLowerInvariant() switch
@@ -126,7 +144,7 @@ namespace RuntimeModelLoaders.Loaders
             };
         }
 
-        private void SpawnModel(Mesh mesh, string path)
+        private GameObject CreateMeshObject(Mesh mesh)
         {
             var go = new GameObject(mesh.name);
             var mf = go.AddComponent<MeshFilter>();
@@ -141,23 +159,70 @@ namespace RuntimeModelLoaders.Loaders
             collider.sharedMesh = mesh;
             collider.convex = true;
 
-            var interactable = go.AddComponent<ModelPlacementController>();
-            interactable.movementType = XRBaseInteractable.MovementType.VelocityTracking;
+            return go;
+        }
 
-            var metadata = go.AddComponent<ModelMetadata>();
+        private void FinalizeSpawn(GameObject root, string path)
+        {
+            if (root == null)
+                throw new ArgumentNullException(nameof(root));
+
+            EnsureColliders(root);
+            AttachInteraction(root);
+            AttachMetadata(root, path);
+            PositionInFrontOfCamera(root.transform);
+
+            root.transform.SetParent(contentRoot, worldPositionStays: true);
+            _spawnedModels.Add(root);
+        }
+
+        private void AttachInteraction(GameObject go)
+        {
+            var interactable = go.GetComponent<ModelPlacementController>();
+            if (interactable == null)
+            {
+                interactable = go.AddComponent<ModelPlacementController>();
+                interactable.movementType = XRBaseInteractable.MovementType.VelocityTracking;
+            }
+        }
+
+        private void AttachMetadata(GameObject go, string path)
+        {
+            var metadata = go.GetComponent<ModelMetadata>();
+            if (metadata == null)
+                metadata = go.AddComponent<ModelMetadata>();
+
             metadata.SourcePath = path;
             metadata.DisplayName = Path.GetFileName(path);
+        }
 
-            // Positioniere das Modell vor dem XR Origin (falls vorhanden)
+        private void EnsureColliders(GameObject root)
+        {
+            var filters = root.GetComponentsInChildren<MeshFilter>();
+            foreach (var filter in filters)
+            {
+                if (filter.sharedMesh == null)
+                    continue;
+
+                var collider = filter.GetComponent<MeshCollider>();
+                if (collider == null)
+                {
+                    collider = filter.gameObject.AddComponent<MeshCollider>();
+                    collider.sharedMesh = filter.sharedMesh;
+                }
+
+                collider.convex = true;
+            }
+        }
+
+        private void PositionInFrontOfCamera(Transform target)
+        {
             var xrOrigin = Camera.main?.transform;
             if (xrOrigin != null)
             {
-                go.transform.position = xrOrigin.position + xrOrigin.forward * 1.0f;
-                go.transform.rotation = Quaternion.LookRotation(xrOrigin.forward, Vector3.up);
+                target.position = xrOrigin.position + xrOrigin.forward * 1.0f;
+                target.rotation = Quaternion.LookRotation(xrOrigin.forward, Vector3.up);
             }
-
-            go.transform.SetParent(contentRoot, worldPositionStays: true);
-            _spawnedModels.Add(go);
         }
 
         private IEnumerable<string> EnumerateFiles(string root, bool isStreamingAssets = false)
@@ -165,15 +230,47 @@ namespace RuntimeModelLoaders.Loaders
             if (!Directory.Exists(root))
                 yield break;
 
-            foreach (var file in Directory.GetFiles(root))
+            var modelsRoot = Path.Combine(root, modelsFolderName);
+            if (root == Application.persistentDataPath && !Directory.Exists(modelsRoot))
+            {
+                Directory.CreateDirectory(modelsRoot);
+            }
+
+            if (!Directory.Exists(modelsRoot))
+                yield break;
+
+            foreach (var dir in Directory.GetDirectories(modelsRoot))
+            {
+                var file = FindFirstSupportedFile(dir);
+                if (file != null)
+                    yield return isStreamingAssets ? $"[StreamingAssets] {file}" : file;
+            }
+
+            foreach (var file in Directory.GetFiles(modelsRoot))
             {
                 var ext = Path.GetExtension(file);
                 if (SupportedExtensions.Contains(ext))
-                {
-                    // Kennzeichne StreamingAssets-Pfade für UI
                     yield return isStreamingAssets ? $"[StreamingAssets] {file}" : file;
-                }
             }
+        }
+
+        private string NormalizePath(string fullPath)
+        {
+            return fullPath.StartsWith("[StreamingAssets]", StringComparison.OrdinalIgnoreCase)
+                ? fullPath.Replace("[StreamingAssets]", string.Empty).Trim()
+                : fullPath;
+        }
+
+        private string? FindFirstSupportedFile(string directory)
+        {
+            foreach (var file in Directory.GetFiles(directory))
+            {
+                var ext = Path.GetExtension(file);
+                if (SupportedExtensions.Contains(ext))
+                    return file;
+            }
+
+            return null;
         }
     }
 }

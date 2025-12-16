@@ -105,14 +105,22 @@ namespace RuntimeModelLoaders.UI
 
         private static string FormatLabel(string path)
         {
-            var name = Path.GetFileName(path);
+            var cleaned = path.StartsWith("[StreamingAssets]", StringComparison.OrdinalIgnoreCase)
+                ? path.Replace("[StreamingAssets]", string.Empty).Trim()
+                : path;
+
+            var fileName = Path.GetFileName(cleaned);
+            var folderName = Path.GetFileName(Path.GetDirectoryName(cleaned));
+
+            var label = string.IsNullOrEmpty(folderName) ? fileName : $"{folderName}/{fileName}";
+
             if (path.StartsWith("[StreamingAssets]", StringComparison.OrdinalIgnoreCase) ||
                 path.Contains(Application.streamingAssetsPath, StringComparison.OrdinalIgnoreCase))
             {
-                return $"StreamingAssets: {name}";
+                label = $"StreamingAssets: {label}";
             }
 
-            return name;
+            return label;
         }
     }
 }

@@ -10,4 +10,7 @@
    - `ToastPresenter` auf demselben Canvas platzieren (CanvasGroup + Text).
 5. Verbinde den `RuntimeModelLoader` im Objekt `ModelLoader` mit dem UI-Canvas (FileBrowserUI, ToastPresenter) und passe bei
    Bedarf den `ContentRoot` an.
-6. Optional: Teleportation Areas hinzufügen, um sich um die geladenen Modelle zu bewegen.
+6. Lege im Build/auf dem Gerät einen Ordner `Models` im Spielverzeichnis (bzw. `Application.persistentDataPath/Models`) an und
+   lege pro Modell einen Unterordner mit der eigentlichen Datei ab (z. B. `Models/Car/car.glb`). Optional kann derselbe Aufbau
+   in `StreamingAssets/Models` für mitgelieferte Beispiele verwendet werden.
+7. Optional: Teleportation Areas hinzufügen, um sich um die geladenen Modelle zu bewegen.
