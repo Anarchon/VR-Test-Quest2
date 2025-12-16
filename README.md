@@ -44,7 +44,7 @@ ProjectSettings/
    - `XR Interaction Toolkit` (empfohlen: 2.5.4 für Unity 2022.3 LTS)
    - `XR Core Utils` **2.3.0** (Version, die von XRI 2.5.4 referenziert wird)
    - Eingebaute Module aktivieren: **Android JNI** (für `Permission/PermissionCallbacks`) und **Unity Analytics** (für `AnalyticsResult` in OpenXR)
-   - `Input System` aktivieren und als Standard setzen.
+   - `Input System` aktivieren, als Standard setzen **und** in den Player Settings die "Native Platform Backends for the New Input System" einschalten (erfordert Editor-Neustart).
 3. **OpenXR / Quest 2 aktivieren**:
    - `Edit > Project Settings > XR Plug-in Management`: Plattform `Android` auswählen, `OpenXR` anhaken.
    - Unter `OpenXR` -> `Features`: `Oculus Touch Controller Profile`, `Eye Gaze Interaction` (optional) aktivieren.
